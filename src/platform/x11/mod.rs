@@ -156,3 +156,9 @@ pub type WindowHandle = WindowThreadHandle;
 pub fn copy_to_clipboard(_data: &str) {
     unimplemented!()
 }
+
+/// The desktop's scale (Xft.dpi / 96), read without a window; None if unset or no display.
+pub fn system_scale_factor() -> Option<f64> {
+    let connection = x11_connection::X11Connection::connect().ok()?;
+    connection.resources.xft_dpi.map(|dpi| dpi as f64 / 96.0)
+}

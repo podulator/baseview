@@ -111,11 +111,11 @@ impl SizingState {
     pub fn handle_host_suggest_scale_factor(
         &mut self, scale: f64, handler: &Handler, shared: &WindowShared,
     ) -> Result<(), PlatformError> {
+        // The host's scale wins (see `SizingStateShared::scale_factor`); nothing to do if it
+        // changes nothing.
         let previous_scale = shared.sizing_state.scale_factor();
         shared.sizing_state.host_suggested_scale_factor.set(Some(scale));
-
-        // If the scaling factor is already provided by the system, do nothing
-        if shared.sizing_state.system_scale_factor.get().is_some() {
+        if shared.sizing_state.scale_factor() == previous_scale {
             return Ok(());
         };
 
@@ -140,7 +140,8 @@ impl SizingStateShared {
         settings: &WindowSettings,
     ) -> Result<Self, FatalError> {
         let scaling = connection.resources.xft_dpi.map(|dpi| dpi as f64 / 96.0);
-        let initial_scale_factor = scaling.unwrap_or(1.0);
+        // The host's scale first (see `scale_factor`), then the desktop's.
+        let initial_scale_factor = settings.fallback_scale_factor.or(scaling).unwrap_or(1.0);
 
         let sizing_strategy = SizingStrategy::from_settings(settings);
         let window_size = settings.size.to_physical(initial_scale_factor);
@@ -155,16 +156,11 @@ impl SizingStateShared {
         })
     }
 
+    /// The host's suggested scale if there is one, else the system's (Xft.dpi), else 1. A
+    /// parented window is the host's child, and CLAP's set_scale() is documented to "override any
+    /// OS info"; hosts that never suggest a scale still get the desktop's.
     pub fn scale_factor(&self) -> f64 {
-        if let Some(factor) = self.system_scale_factor.get() {
-            return factor;
-        };
-
-        if let Some(factor) = self.host_suggested_scale_factor.get() {
-            return factor;
-        }
-
-        1.0
+        self.host_suggested_scale_factor.get().or(self.system_scale_factor.get()).unwrap_or(1.0)
     }
 
     pub fn size(&self) -> PhysicalSize<u16> {

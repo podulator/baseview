@@ -123,7 +123,8 @@ impl Window {
     ///
     /// On Win32, this value is used if running on early versions of Windows 10 (or earlier).
     ///
-    /// On X11, this value is used if no `Xft.dpi`setting is set.
+    /// On X11, this value overrides the desktop's `Xft.dpi` (a parented window is the host's child;
+    /// CLAP's `set_scale()` is documented to "override any OS info").
     ///
     /// On macOS, this function is always a no-op.
     #[inline]

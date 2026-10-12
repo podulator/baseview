@@ -31,6 +31,21 @@ pub use timer::TimerHandle;
 pub use waker::WindowWaker;
 pub use window::*;
 
+/// The desktop's scale factor, without needing a window: what a new window will use unless the
+/// host suggests another. Lets a plugin answer a host's size query before its window exists (CLAP
+/// asks for the size before `set_parent()`). X11 only for now (`Xft.dpi`); `None` elsewhere, or
+/// when the desktop sets none.
+pub fn system_scale_factor() -> Option<f64> {
+    #[cfg(target_os = "linux")]
+    {
+        crate::platform::system_scale_factor()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        None
+    }
+}
+
 #[allow(unused, reason = "Some platforms may not use all exports from this mod")]
 pub(crate) use tracing::*;
 
